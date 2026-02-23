@@ -42,31 +42,27 @@ Zas!backend-frut/
 | `inventory_dosis` | Stock de bolsitas preparadas                   |
 | `sales`         | Ventas con items y extras                        |
 
-## Instalación
+## Despliegue en Render
+
+1. Conecta tu repositorio en [Render](https://render.com)
+2. Crea un **Web Service** y vincula el repo `Zas-Backend-frut`
+3. Configuración automática (si usas `render.yaml`):
+   - **Build**: `pip install -r requirements.txt`
+   - **Start**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+4. Añade la variable de entorno **MONGODB_URL** (usa [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) para la base de datos en la nube)
+5. Tu API quedará en `https://zas-backend-frut.onrender.com` (o el nombre que elijas)
+
+## Desarrollo local
 
 ```bash
-# Crear entorno virtual
 python -m venv venv
 venv\Scripts\activate   # Windows
-
-# Instalar dependencias
 pip install -r requirements.txt
-
-# Copiar variables de entorno
-copy .env.example .env
-# Editar .env con tu URL de MongoDB
-```
-
-## Ejecutar
-
-```bash
+copy .env.example .env  # Editar con tu MongoDB
 python run.py
-# o
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-API disponible en: **http://localhost:8000**  
-Documentación Swagger: **http://localhost:8000/docs**
+API local: **http://localhost:8000** | Docs: **http://localhost:8000/docs**
 
 ## Endpoints Principales
 

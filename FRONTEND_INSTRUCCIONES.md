@@ -7,11 +7,11 @@ Guía para conectar tu frontend React/Next.js con el backend.
 ## 1. URL Base de la API
 
 ```javascript
-// Desarrollo local
+// Desarrollo local (backend en tu máquina)
 const API_BASE = "http://localhost:8000";
 
-// Producción (cuando despliegues el backend)
-const API_BASE = "https://tu-backend.railway.app"; // o tu URL
+// Producción (backend en Render)
+const API_BASE = "https://zas-backend-frut.onrender.com"; // Tu URL de Render
 ```
 
 ---
@@ -202,12 +202,11 @@ export const api = {
 ## 4. Variables de Entorno (.env.local)
 
 ```env
+# Desarrollo (backend local)
 NEXT_PUBLIC_API_URL=http://localhost:8000
-```
 
-Para producción (Vercel):
-```env
-NEXT_PUBLIC_API_URL=https://tu-backend-desplegado.com
+# Producción (backend en Render + frontend en Vercel)
+NEXT_PUBLIC_API_URL=https://zas-backend-frut.onrender.com
 ```
 
 ---

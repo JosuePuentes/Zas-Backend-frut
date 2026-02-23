@@ -1,0 +1,16 @@
+# Render Blueprint - Zas! Backend Batidos
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: zas-backend-frut
+    runtime: python
+
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
+    envVars:
+      - key: MONGODB_URL
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: zas_batidos
