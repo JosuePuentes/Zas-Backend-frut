@@ -104,3 +104,87 @@ Solo admin/master autenticados.
 
 ## 8. Permisos
 - pedidos, sucursales, finanzas-global (para rol master)
+
+---
+
+## 12. Sistema de Inventario (Nuevo - Super Fruty)
+
+El frontend usa InventarioContext con localStorage. Para producción, implementa estos modelos y endpoints.
+
+### 12.1 Inventario Materia Prima
+
+**ProductoMateriaPrima:** `{ id, codigo, descripcion, categoria: "fruta"|"adicionales", unidad: "kg"|"unidad" }`
+- Fruta → unidad kg
+- Adicionales → unidad cantidad
+
+**CompraMateriaPrima:** `{ id, productoId, cantidad, precioUnitario, fecha }`
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/inventario/materia-prima/productos` | Listar productos |
+| POST | `/inventario/materia-prima/productos` | Crear producto |
+| PUT | `/inventario/materia-prima/productos/:id` | Actualizar |
+| DELETE | `/inventario/materia-prima/productos/:id` | Eliminar |
+| POST | `/inventario/materia-prima/compras` | Registrar compra |
+| POST | `/inventario/materia-prima/import-excel` | Importar CSV (codigo, descripcion, categoria) |
+
+### 12.2 Inventario de Venta
+
+**ProductoInventarioVenta:** `{ id, codigo, descripcion, precio, tamanioVaso, tieneEtiqueta, ingredientes: [{ materiaPrimaId, nombre, gramos }], vasoId?, etiquetaId?, costoVaso?, costoEtiqueta?, cantidad }`
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/inventario/venta` | Listar productos venta |
+| POST | `/inventario/venta` | Crear producto |
+| PUT | `/inventario/venta/:id` | Actualizar |
+| DELETE | `/inventario/venta/:id` | Eliminar |
+
+### 12.3 Inventario Preparación (automático)
+
+Calculado: stock materia prima + recetas inventario venta → bolsitas disponibles por producto.
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/inventario/preparacion` | Lista código, descripción, cantidad, costoUnitario |
+
+### 12.4 Producción
+
+Muestra recetas (gramos por ingrediente) y bolsitas disponibles. Descuento automático al vender en POS o pedidos online.
+
+### 12.5 POS - Punto de Venta
+
+**ClientePOS:** `{ id, cedula, nombre, apellido, direccion, telefono, esPuntoVenta, vecesComprado, createdAt }`
+
+**Venta:** `{ id, numeroFactura, clienteId?, clienteNombre, items: [{ productoId, nombre, cantidad, precioUnitario, total }], subtotal, metodoPago: "efectivo_bs"|"efectivo_usd"|"zelle"|"pago_movil"|"transferencia"|"binance", montoRecibido?, vuelto?, comprobanteUrl?, fecha }`
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/pos/ventas` | Registrar venta |
+| POST | `/pos/clientes` | Registrar/actualizar cliente POS |
+| GET | `/pos/clientes` | Listar clientes (filtro esPuntoVenta) |
+| GET | `/pos/ventas` | Listar ventas (filtro fechaInicio, fechaFin) |
+
+### 12.6 Gastos
+
+**Gasto:** `{ id, descripcion, monto, fecha }`
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/gastos` | Listar gastos |
+| POST | `/gastos` | Registrar gasto |
+
+### 12.7 Catálogo Cliente
+
+Muestra solo: código, descripción, precio (sin costo vaso/etiqueta). Productos desde inventario venta.
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/catalogo` | Catálogo público (código, descripción, precio) |
+
+### Integración con módulos existentes
+
+Si ya tienes `inventory_raw`, `inventory_dosis`, `compras` y `sales`, conviene integrar la sección 12 con ellos:
+- `inventory_raw` → ProductoMateriaPrima + CompraMateriaPrima (stock = suma de compras)
+- `compras` → CompraMateriaPrima
+- `inventory_dosis` → Inventario Preparación (calculado)
+- `sales` → Venta (POS)

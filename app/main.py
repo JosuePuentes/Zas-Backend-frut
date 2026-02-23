@@ -26,6 +26,12 @@ from app.routers import (
     planning,
     reports,
     alerts,
+    inventario_materia_prima,
+    inventario_venta,
+    inventario_preparacion,
+    pos,
+    gastos,
+    catalogo,
 )
 
 
@@ -103,6 +109,12 @@ app.include_router(sales.router)
 app.include_router(planning.router)
 app.include_router(reports.router)
 app.include_router(alerts.router)
+app.include_router(inventario_materia_prima.router)
+app.include_router(inventario_venta.router)
+app.include_router(inventario_preparacion.router)
+app.include_router(pos.router)
+app.include_router(gastos.router)
+app.include_router(catalogo.router)
 
 
 @app.get("/")
