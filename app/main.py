@@ -38,11 +38,12 @@ async def lifespan(app: FastAPI):
     from app.auth import hash_password
     from datetime import datetime
     db = get_database()
-    if db and not await db["users"].find_one({"rol": "master"}):
-        await db["users"].insert_one({
+    if db:
+        master = await db["users"].find_one({"rol": "master"})
+        master_doc = {
             "email": "master@zas.com",
             "usuario": "master",
-            "password_hash": hash_password("master"),
+            "password_hash": hash_password("clave123"),
             "nombre": "Master",
             "telefono": "",
             "rol": "master",
@@ -50,7 +51,14 @@ async def lifespan(app: FastAPI):
             "sucursalId": "",
             "ubicacion": {},
             "createdAt": datetime.utcnow(),
-        })
+        }
+        if not master:
+            await db["users"].insert_one(master_doc)
+        else:
+            await db["users"].update_one(
+                {"rol": "master"},
+                {"$set": {"password_hash": master_doc["password_hash"]}},
+            )
     yield
     await close_mongo_connection()
 
