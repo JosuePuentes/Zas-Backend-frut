@@ -12,9 +12,8 @@ from app.routers import (
     sucursales,
     pedidos,
     admin_finanzas,
-    anuncios,
-    banners,
-    paneles,
+    home,
+    admin_content,
     soporte,
     compras,
     inventory_raw,
@@ -89,9 +88,8 @@ app.include_router(notifications.router)
 app.include_router(sucursales.router)
 app.include_router(pedidos.router)
 app.include_router(admin_finanzas.router)
-app.include_router(anuncios.router)
-app.include_router(banners.router)
-app.include_router(paneles.router)
+app.include_router(home.router)
+app.include_router(admin_content.router)
 app.include_router(soporte.router)
 app.include_router(compras.router)
 app.include_router(inventory_raw.router)

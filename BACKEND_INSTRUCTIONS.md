@@ -77,5 +77,30 @@ Solo admin/master autenticados.
 
 ---
 
-## 7. Permisos
+## 7. Anuncios, Banners y Paneles
+
+### Modelos
+- **Anuncios:** { texto, orden, activo }
+- **Banners:** { imagen, titulo, subtitulo, enlace, orden, activo }
+- **Paneles:** { imagen, titulo, subtitulo, orden, activo }
+
+### Endpoints públicos (GET)
+| GET | `/home/anuncios` | `/home/banners` | `/home/paneles` |
+
+### Endpoints admin (auth admin/master)
+| Método | Endpoint | Body |
+|--------|----------|------|
+| POST | `/admin/anuncios` | { texto } |
+| PUT | `/admin/anuncios/{id}` | { texto?, orden?, activo? } |
+| DELETE | `/admin/anuncios/{id}` | — |
+| POST | `/admin/banners` | { imagen, titulo, subtitulo?, enlace? } |
+| PUT | `/admin/banners/{id}` | { imagen?, titulo?, subtitulo?, enlace?, orden?, activo? } |
+| DELETE | `/admin/banners/{id}` | — |
+| POST | `/admin/paneles` | { imagen, titulo, subtitulo? } |
+| PUT | `/admin/paneles/{id}` | { imagen?, titulo?, subtitulo?, orden?, activo? } |
+| DELETE | `/admin/paneles/{id}` | — |
+
+---
+
+## 8. Permisos
 - pedidos, sucursales, finanzas-global (para rol master)
