@@ -41,6 +41,8 @@ En **Environment** del servicio, añade:
 | `JWT_SECRET` | Clave secreta para tokens (ej: string aleatorio largo) |
 | `PYTHON_VERSION` | `3.12.0` *(opcional, evita usar Python 3.14)* |
 
+**Si tienes error SSL con MongoDB Atlas** (TLSV1_ALERT_INTERNAL_ERROR): Añade al final de MONGODB_URL: `&tlsAllowInvalidCertificates=true`
+
 ### 5. Desplegar
 
 Haz clic en **Create Web Service**. Render desplegará el backend y te dará una URL como:
