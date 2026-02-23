@@ -1,4 +1,5 @@
 """Esquemas para autenticación."""
+from typing import Literal
 from pydantic import BaseModel
 
 
@@ -12,9 +13,10 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    """Login."""
-    email: str
+    """Login. tipo distingue el flujo: admin (usuario o email) vs cliente (email)."""
+    email: str  # Para cliente. Para admin puede ser email o usuario
     password: str
+    tipo: Literal["admin", "cliente"] = "cliente"
 
 
 class TokenResponse(BaseModel):

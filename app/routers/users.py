@@ -17,6 +17,7 @@ def user_to_response(doc: dict) -> dict:
         "email": doc["email"],
         "nombre": doc["nombre"],
         "telefono": doc.get("telefono", ""),
+        "usuario": doc.get("usuario", ""),
         "rol": doc.get("rol", "cliente"),
         "permisos": doc.get("permisos", []),
         "createdAt": doc.get("createdAt", datetime.utcnow()),
@@ -41,11 +42,17 @@ async def crear_usuario(data: UserCreateRequest):
     if existing:
         raise HTTPException(status_code=400, detail="El email ya está registrado")
 
+    if data.rol == "admin" and data.usuario:
+        existing_user = await users_col.find_one({"usuario": data.usuario})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="El usuario ya existe")
+
     user_doc = {
         "email": data.email.lower(),
         "password_hash": hash_password(data.password),
         "nombre": data.nombre,
         "telefono": data.telefono,
+        "usuario": data.usuario if data.rol == "admin" else "",
         "rol": data.rol,
         "permisos": data.permisos,
         "createdAt": datetime.utcnow(),

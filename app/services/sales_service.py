@@ -9,7 +9,7 @@ class SalesService:
     """Gestiona ventas y descuenta inventarios de forma atómica."""
 
     @staticmethod
-    async def crear_venta(items: list[dict]) -> dict:
+    async def crear_venta(items: list[dict], cliente_id: str | None = None) -> dict:
         """
         Crea una venta y descuenta:
         - Dosis de inventory_dosis (o materia prima si no hay dosis)
@@ -138,6 +138,8 @@ class SalesService:
             "costo_total_venta": costo_total,
             "fecha": datetime.utcnow(),
         }
+        if cliente_id:
+            venta["clienteId"] = cliente_id
         result = await sales_col.insert_one(venta)
         venta["_id"] = result.inserted_id
 

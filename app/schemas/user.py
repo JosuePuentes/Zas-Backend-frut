@@ -5,11 +5,12 @@ from pydantic import BaseModel
 
 
 class UserCreateRequest(BaseModel):
-    """Crear usuario."""
+    """Crear usuario. Admins requieren campo usuario."""
     email: str
     password: str
     nombre: str
     telefono: str = ""
+    usuario: str = ""  # Para admins: nombre de usuario para login
     rol: str = "cliente"
     permisos: list[str] = []
 
@@ -20,6 +21,7 @@ class UserResponse(BaseModel):
     email: str
     nombre: str
     telefono: str
+    usuario: str  # Para admins
     rol: str
     permisos: list[str]
     createdAt: datetime

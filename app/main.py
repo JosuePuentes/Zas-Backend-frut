@@ -9,6 +9,11 @@ from app.routers import (
     auth,
     users,
     notifications,
+    anuncios,
+    banners,
+    paneles,
+    soporte,
+    compras,
     inventory_raw,
     inventory_dosis,
     recipes,
@@ -48,6 +53,11 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(notifications.router)
+app.include_router(anuncios.router)
+app.include_router(banners.router)
+app.include_router(paneles.router)
+app.include_router(soporte.router)
+app.include_router(compras.router)
 app.include_router(inventory_raw.router)
 app.include_router(inventory_dosis.router)
 app.include_router(recipes.router)

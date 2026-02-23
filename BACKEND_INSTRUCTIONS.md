@@ -1,94 +1,111 @@
-# Instrucciones del Backend - Auth, Users, Notifications
+# Instrucciones del Backend - Especificación Técnica
 
-## Endpoints implementados
+## 1. Autenticación
+
+### Login con tipo
+- **Admins**: login con `usuario` (o `email`) + `password`
+- **Clientes**: login con `email` + `password`
+- Campo `usuario` en la tabla de usuarios administrativos
+- Endpoint `POST /auth/login` acepta `tipo: 'admin' | 'cliente'` para distinguir el flujo
+
+### Endpoints Auth
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| POST | `/auth/register` | Registro (email, password, nombre, telefono, rol) |
+| POST | `/auth/login` | Login con `tipo: 'admin' \| 'cliente'` |
+
+### Body Login
+```json
+{
+  "email": "admin@ejemplo.com",
+  "password": "***",
+  "tipo": "admin"
+}
+```
+Para admin: `email` puede ser usuario o email. Para cliente: solo email.
+
+---
+
+## 2. Anuncios y Banners
+
+### Anuncios diarios
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/anuncios` | Listar (query: `activo_only=true` para solo activos) |
+| POST | `/anuncios` | Crear |
+| GET | `/anuncios/{id}` | Obtener |
+| PATCH | `/anuncios/{id}` | Actualizar |
+| DELETE | `/anuncios/{id}` | Eliminar |
+
+**Body crear:** `{ texto, enlace?, activo? }`
+
+### Banners
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/banners` | Listar (ordenados, `activo_only=true`) |
+| POST | `/banners` | Crear |
+| GET | `/banners/{id}` | Obtener |
+| PATCH | `/banners/{id}` | Actualizar |
+| DELETE | `/banners/{id}` | Eliminar |
+
+**Body crear:** `{ imagen_url, enlace?, orden?, activo? }`
+
+### Paneles publicidad
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/paneles` | Listar (ordenados, `activo_only=true`) |
+| POST | `/paneles` | Crear |
+| GET | `/paneles/{id}` | Obtener |
+| PATCH | `/paneles/{id}` | Actualizar |
+| DELETE | `/paneles/{id}` | Eliminar |
+
+**Body crear:** `{ imagen_url, enlace?, orden?, activo? }`
+
+---
+
+## 3. Soporte
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| POST | `/auth/register` | Registro (incluir telefono) |
-| POST | `/auth/login` | Login |
-| GET | `/users` | Listar usuarios y clientes |
-| POST | `/users` | Crear usuario (incluir telefono) |
-| GET | `/notifications` | Listar notificaciones |
-| PATCH | `/notifications/{id}/read` | Marcar notificación como leída |
-| PATCH | `/notifications/read-all` | Marcar todas como leídas |
+| POST | `/soporte` | Crear mensaje (clienteId, mensaje, asunto?) |
+| GET | `/soporte` | Listar mensajes (admin) |
+| PATCH | `/soporte/{id}/read` | Marcar como leído |
 
-## Modelo de usuario
+---
+
+## 4. Compras del cliente
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| GET | `/compras` | Listar compras del cliente autenticado |
+
+**Requiere:** `Authorization: Bearer <token>`
+
+---
+
+## 5. Ventas (POS)
+
+Al crear venta desde el frontend del cliente, incluir `cliente_id` en el body para vincular la compra:
 
 ```json
 {
-  "email": "string",
-  "password": "string",
-  "nombre": "string",
-  "telefono": "string",
-  "rol": "string",
-  "permisos": ["string"],
-  "createdAt": "datetime"
+  "items": [...],
+  "cliente_id": "ID_DEL_CLIENTE"
 }
 ```
 
-## Lógica al registrar cliente
+---
 
-Al registrar un cliente (`POST /auth/register` con `rol: "cliente"`):
+## 6. Usuarios
 
-1. Crear el usuario en la base de datos
-2. Crear una notificación: `{ tipo: 'nuevo_cliente', mensaje: 'Nuevo cliente registrado: [nombre]' }`
+Al crear admin: incluir `usuario` para login.
 
-## Integración en el frontend
-
-1. **AuthContext**: Sustituir el uso de `localStorage` por llamadas a la API:
-   - `POST /auth/register` para registro
-   - `POST /auth/login` para login
-   - Guardar el token JWT en localStorage/state
-
-2. **NotificationsContext**: Consumir los endpoints de notificaciones:
-   - `GET /notifications` para listar
-   - `PATCH /notifications/{id}/read` para marcar una
-   - `PATCH /notifications/read-all` para marcar todas
-
-3. **Headers**: Enviar el token JWT en todas las peticiones protegidas:
-   ```
-   Authorization: Bearer <token>
-   ```
-
-## Ejemplo de respuestas
-
-### POST /auth/register
 ```json
 {
-  "access_token": "eyJ...",
-  "token_type": "bearer",
-  "user": {
-    "id": "...",
-    "email": "cliente@ejemplo.com",
-    "nombre": "Juan Pérez",
-    "telefono": "1234567890",
-    "rol": "cliente",
-    "permisos": [],
-    "createdAt": "2025-02-23T..."
-  }
+  "email": "admin@zas.com",
+  "password": "***",
+  "nombre": "Admin",
+  "usuario": "admin",
+  "rol": "admin"
 }
 ```
-
-### POST /auth/login
-Misma estructura que register.
-
-### GET /notifications
-```json
-[
-  {
-    "id": "...",
-    "tipo": "nuevo_cliente",
-    "mensaje": "Nuevo cliente registrado: Juan Pérez",
-    "leida": false,
-    "createdAt": "2025-02-23T..."
-  }
-]
-```
-
-## Variable de entorno
-
-Para producción, configurar en Render:
-
-| Key | Value |
-|-----|-------|
-| `JWT_SECRET` | Clave secreta segura para firmar tokens |

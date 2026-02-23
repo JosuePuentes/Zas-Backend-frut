@@ -17,6 +17,7 @@ def user_to_response(doc: dict) -> dict:
         "email": doc["email"],
         "nombre": doc["nombre"],
         "telefono": doc.get("telefono", ""),
+        "usuario": doc.get("usuario", ""),
         "rol": doc.get("rol", "cliente"),
         "permisos": doc.get("permisos", []),
         "createdAt": doc.get("createdAt", datetime.utcnow()),
@@ -71,13 +72,29 @@ async def register(data: RegisterRequest):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(data: LoginRequest):
-    """Login con email y password."""
+    """
+    Login con tipo: 'admin' | 'cliente'
+    - Admin: busca por usuario O email + password
+    - Cliente: busca por email + password
+    """
     db = get_database()
     users_col = db["users"]
 
-    user = await users_col.find_one({"email": data.email.lower()})
+    if data.tipo == "admin":
+        # Admin: puede usar usuario o email
+        user = await users_col.find_one({
+            "$or": [
+                {"usuario": data.email},
+                {"email": data.email.lower()},
+            ],
+            "rol": "admin",
+        })
+    else:
+        # Cliente: solo email
+        user = await users_col.find_one({"email": data.email.lower(), "rol": "cliente"})
+
     if not user or not verify_password(data.password, user["password_hash"]):
-        raise HTTPException(status_code=401, detail="Email o contraseña incorrectos")
+        raise HTTPException(status_code=401, detail="Credenciales incorrectas")
 
     token_data = {"sub": str(user["_id"]), "email": user["email"], "rol": user.get("rol", "cliente")}
     token = create_access_token(token_data)
