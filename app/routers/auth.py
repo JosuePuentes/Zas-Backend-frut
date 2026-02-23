@@ -5,7 +5,7 @@ from bson import ObjectId
 
 from app.database import get_database
 from app.auth import hash_password, verify_password, create_access_token
-from app.schemas.auth import RegisterRequest, LoginRequest, TokenResponse
+from app.schemas.auth import RegisterRequest, RegisterResponse, LoginRequest, TokenResponse
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -26,11 +26,11 @@ def user_to_response(doc: dict) -> dict:
     }
 
 
-@router.post("/register", response_model=TokenResponse)
+@router.post("/register", response_model=RegisterResponse)
 async def register(data: RegisterRequest):
     """
-    Registro de usuario (principalmente clientes).
-    Al registrar un cliente, se crea una notificación.
+    Registro público solo para clientes. No acepta rol ni usuario.
+    ubicacion obligatorio (para delivery).
     """
     db = get_database()
     users_col = db["users"]
@@ -40,15 +40,16 @@ async def register(data: RegisterRequest):
     if existing:
         raise HTTPException(status_code=400, detail="El email ya está registrado")
 
-    ubicacion = data.ubicacion.model_dump() if data.ubicacion else {}
+    ubicacion = data.ubicacion.model_dump()
     user_doc = {
         "email": data.email.lower(),
         "password_hash": hash_password(data.password),
         "nombre": data.nombre,
         "telefono": data.telefono,
-        "rol": data.rol,
+        "rol": "cliente",
         "permisos": [],
         "sucursalId": "",
+        "usuario": "",
         "ubicacion": ubicacion,
         "createdAt": datetime.utcnow(),
     }
@@ -56,28 +57,23 @@ async def register(data: RegisterRequest):
     result = await users_col.insert_one(user_doc)
     user_doc["_id"] = result.inserted_id
 
-    # Si es cliente, crear notificación
-    if data.rol == "cliente":
-        notification = {
-            "tipo": "nuevo_cliente",
-            "mensaje": f"Nuevo cliente registrado: {data.nombre}",
-            "leida": False,
-            "createdAt": datetime.utcnow(),
-        }
-        await notifications_col.insert_one(notification)
+    notification = {
+        "tipo": "nuevo_cliente",
+        "mensaje": f"Nuevo cliente registrado: {data.nombre}",
+        "leida": False,
+        "createdAt": datetime.utcnow(),
+    }
+    await notifications_col.insert_one(notification)
 
     token_data = {
         "sub": str(user_doc["_id"]),
         "email": user_doc["email"],
-        "rol": user_doc["rol"],
-        "sucursalId": user_doc.get("sucursalId", ""),
+        "rol": "cliente",
+        "sucursalId": "",
     }
     token = create_access_token(token_data)
 
-    return TokenResponse(
-        access_token=token,
-        user=user_to_response(user_doc),
-    )
+    return RegisterResponse(user=user_to_response(user_doc), token=token)
 
 
 @router.post("/login", response_model=TokenResponse)

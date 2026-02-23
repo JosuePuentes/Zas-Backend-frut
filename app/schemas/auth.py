@@ -10,13 +10,18 @@ class UbicacionSchema(BaseModel):
 
 
 class RegisterRequest(BaseModel):
-    """Registro de usuario (cliente). ubicacion para delivery."""
+    """Registro público solo para clientes. No aceptar rol ni usuario. ubicacion obligatorio."""
     email: str
     password: str
     nombre: str
     telefono: str = ""
-    rol: str = "cliente"
-    ubicacion: UbicacionSchema | None = None
+    ubicacion: UbicacionSchema
+
+
+class RegisterResponse(BaseModel):
+    """Respuesta de registro: user y token."""
+    user: dict
+    token: str
 
 
 class LoginRequest(BaseModel):

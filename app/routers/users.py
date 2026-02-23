@@ -1,13 +1,22 @@
-"""Endpoints de usuarios."""
+"""Endpoints de usuarios. Solo admin/master autenticados."""
 from datetime import datetime
-from fastapi import APIRouter, HTTPException
-from bson import ObjectId
+from fastapi import APIRouter, HTTPException, Depends
 
 from app.database import get_database
-from app.auth import hash_password
+from app.auth import hash_password, require_auth
 from app.schemas.user import UserCreateRequest, UserResponse
 
 router = APIRouter(prefix="/users", tags=["Users"])
+
+
+async def _require_admin_or_master(current_user: dict = Depends(require_auth)):
+    """Solo admin o master."""
+    rol = current_user.get("rol")
+    if rol not in ("admin", "master"):
+        raise HTTPException(403, "Solo admin o master pueden gestionar usuarios")
+    return current_user
+
+
 
 
 def user_to_response(doc: dict) -> dict:
@@ -27,16 +36,29 @@ def user_to_response(doc: dict) -> dict:
 
 
 @router.get("", response_model=list[UserResponse])
-async def listar_usuarios():
-    """Listar usuarios y clientes."""
+async def listar_usuarios(current_user: dict = Depends(_require_admin_or_master)):
+    """Listar usuarios y clientes (solo admin/master)."""
     db = get_database()
-    cursor = db["users"].find({})
+    query = {}
+    if current_user.get("rol") != "master":
+        suc = current_user.get("sucursalId")
+        if suc:
+            query["$or"] = [{"sucursalId": suc}, {"rol": "cliente"}]
+    cursor = db["users"].find(query)
     return [user_to_response(doc) async for doc in cursor]
 
 
 @router.post("", response_model=UserResponse)
-async def crear_usuario(data: UserCreateRequest):
-    """Crear usuario (incluir teléfono)."""
+async def crear_usuario(data: UserCreateRequest, current_user: dict = Depends(_require_admin_or_master)):
+    """
+    Crear usuario desde área admin.
+    - Cliente: admin/master. Requiere ubicacion.
+    - Admin: admin/master. Requiere usuario, permisos, sucursalId.
+    - Master: solo si el usuario actual es master.
+    """
+    if data.rol == "master" and current_user.get("rol") != "master":
+        raise HTTPException(403, "Solo master puede crear otro master")
+
     db = get_database()
     users_col = db["users"]
 
@@ -44,10 +66,16 @@ async def crear_usuario(data: UserCreateRequest):
     if existing:
         raise HTTPException(status_code=400, detail="El email ya está registrado")
 
-    if data.rol == "admin" and data.usuario:
+    if data.rol in ("admin", "master") and data.usuario:
         existing_user = await users_col.find_one({"usuario": data.usuario})
         if existing_user:
             raise HTTPException(status_code=400, detail="El usuario ya existe")
+
+    if data.rol == "cliente" and not data.ubicacion:
+        raise HTTPException(status_code=400, detail="Cliente requiere ubicacion")
+
+    if data.rol == "admin" and not data.sucursalId and current_user.get("rol") != "master":
+        raise HTTPException(status_code=400, detail="Admin requiere sucursalId")
 
     ubicacion = data.ubicacion.model_dump() if data.ubicacion else {}
     user_doc = {
@@ -57,7 +85,7 @@ async def crear_usuario(data: UserCreateRequest):
         "telefono": data.telefono,
         "usuario": data.usuario if data.rol in ("admin", "master") else "",
         "rol": data.rol,
-        "permisos": data.permisos,
+        "permisos": data.permisos if data.rol in ("admin", "master") else [],
         "sucursalId": data.sucursalId or "",
         "ubicacion": ubicacion,
         "createdAt": datetime.utcnow(),

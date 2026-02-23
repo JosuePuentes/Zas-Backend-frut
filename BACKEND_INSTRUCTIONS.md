@@ -50,13 +50,21 @@
 
 ## 5. Auth y Usuarios
 
+### Registro público (POST /auth/register)
+Solo clientes. No acepta rol ni usuario.
+- Body: email, password, nombre, telefono, ubicacion (obligatorio)
+- Respuesta: `{ user: {...}, token: "jwt..." }`
+
+### Crear usuarios (POST /users)
+Solo admin/master autenticados.
+- Cliente: rol, ubicacion obligatorio
+- Admin: usuario, permisos, sucursalId
+- Master: solo si el usuario actual es master
+
 ### Login
 - tipo: `admin` | `cliente`
 - Admin/Master: usuario o email + password
 - Cliente: email + password
-
-### Registro
-- ubicacion opcional para clientes (delivery)
 
 ### Credenciales de prueba
 - **Master:** usuario `master`, email `master@zas.com`, password `master`
