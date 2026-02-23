@@ -16,6 +16,7 @@ async def _require_master(current_user: dict = Depends(require_auth)):
 
 
 @router.get("/finanzas")
+@router.get("/finanzas-global")
 async def finanzas_globales(current_user: dict = Depends(_require_master)):
     """Suma de ventas de todas las sucursales (solo master)."""
     db = get_database()

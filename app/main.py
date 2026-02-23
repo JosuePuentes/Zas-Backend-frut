@@ -12,6 +12,7 @@ from app.routers import (
     sucursales,
     pedidos,
     admin_finanzas,
+    admin_soporte,
     home,
     admin_content,
     soporte,
@@ -88,6 +89,7 @@ app.include_router(notifications.router)
 app.include_router(sucursales.router)
 app.include_router(pedidos.router)
 app.include_router(admin_finanzas.router)
+app.include_router(admin_soporte.router)
 app.include_router(home.router)
 app.include_router(admin_content.router)
 app.include_router(soporte.router)

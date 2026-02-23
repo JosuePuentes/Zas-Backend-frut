@@ -7,17 +7,19 @@ from bson import ObjectId
 from app.database import get_database
 from app.auth import require_auth
 from app.utils.haversine import sucursal_mas_cercana
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-router = APIRouter(prefix="/pedidos", tags=["Pedidos"])
+router = APIRouter(tags=["Pedidos"])
 
 
 class ItemPedido(BaseModel):
-    recipe_id: str
-    nombre_batido: str
+    recipe_id: str = Field(..., alias="recipeId")
+    nombre_batido: str = Field(..., alias="nombreBatido")
     cantidad: int = 1
-    precio_unitario: float
+    precio_unitario: float = Field(..., alias="precioUnitario")
     extras: list[dict] = []
+
+    model_config = {"populate_by_name": True}
 
 
 class PedidoCreate(BaseModel):
@@ -26,7 +28,11 @@ class PedidoCreate(BaseModel):
     total: float
     ubicacion_lat: float = 0
     ubicacion_lng: float = 0
-    direccion_entrega: str = ""
+    ubicacion_entrega: str = ""  # Dirección de entrega
+    delivery: bool = True
+    metodo_pago: str = ""
+    referencia_pago: str = ""
+    banco_emisor: str = ""
     notas: str = ""
 
 
@@ -55,7 +61,11 @@ def pedido_to_response(doc: dict) -> dict:
         "total": doc.get("total", 0),
         "estado": doc.get("estado", "pendiente"),
         "ubicacion": doc.get("ubicacion", {}),
-        "direccionEntrega": doc.get("direccionEntrega", ""),
+        "ubicacionEntrega": doc.get("ubicacionEntrega", ""),
+        "delivery": doc.get("delivery", True),
+        "metodoPago": doc.get("metodoPago", ""),
+        "referenciaPago": doc.get("referenciaPago", ""),
+        "bancoEmisor": doc.get("bancoEmisor", ""),
         "notas": doc.get("notas", ""),
         "createdAt": doc.get("createdAt", datetime.utcnow()),
     }
@@ -77,11 +87,15 @@ async def crear_pedido(data: PedidoCreate):
     doc = {
         "clienteId": data.cliente_id,
         "sucursalId": sucursal_id,
-        "items": [i.model_dump() for i in data.items],
+        "items": [i.model_dump(by_alias=True) for i in data.items],
         "total": data.total,
         "estado": "pendiente",
         "ubicacion": {"lat": data.ubicacion_lat, "lng": data.ubicacion_lng},
-        "direccionEntrega": data.direccion_entrega,
+        "ubicacionEntrega": data.ubicacion_entrega,
+        "delivery": data.delivery,
+        "metodoPago": data.metodo_pago,
+        "referenciaPago": data.referencia_pago,
+        "bancoEmisor": data.banco_emisor,
         "notas": data.notas,
         "createdAt": datetime.utcnow(),
     }
@@ -90,7 +104,7 @@ async def crear_pedido(data: PedidoCreate):
     return pedido_to_response(doc)
 
 
-@router.get("/cliente/pedidos")
+@router.get("/cliente/pedidos", summary="Mis pedidos (cliente)")
 async def mis_pedidos(current_user: dict = Depends(require_auth)):
     """Mis pedidos (cliente autenticado)."""
     user_id = current_user.get("sub")
@@ -99,7 +113,7 @@ async def mis_pedidos(current_user: dict = Depends(require_auth)):
     return [pedido_to_response(d) async for d in cursor]
 
 
-@router.get("/admin/pedidos")
+@router.get("/admin/pedidos", summary="Listar pedidos (admin)")
 async def listar_pedidos_admin(
     sucursal_id: Optional[str] = None,
     estado: Optional[str] = None,

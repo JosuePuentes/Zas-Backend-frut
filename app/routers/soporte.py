@@ -1,4 +1,4 @@
-"""Endpoints de soporte."""
+"""Endpoints de soporte. POST público (cliente), GET/PATCH en /admin/soporte."""
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from bson import ObjectId
@@ -15,7 +15,7 @@ class MensajeSoporteCreate(BaseModel):
     asunto: str = ""
 
 
-def doc_to_response(doc: dict) -> dict:
+def _soporte_response(doc: dict) -> dict:
     return {
         "id": str(doc["_id"]),
         "clienteId": doc.get("clienteId", ""),
@@ -28,7 +28,7 @@ def doc_to_response(doc: dict) -> dict:
 
 @router.post("")
 async def crear_mensaje(data: MensajeSoporteCreate):
-    """Crear mensaje de soporte (cliente)."""
+    """Crear mensaje de soporte (cliente, público)."""
     db = get_database()
     doc = {
         "clienteId": data.cliente_id,
@@ -39,24 +39,4 @@ async def crear_mensaje(data: MensajeSoporteCreate):
     }
     result = await db["soporte"].insert_one(doc)
     doc["_id"] = result.inserted_id
-    return doc_to_response(doc)
-
-
-@router.get("")
-async def listar_mensajes(limit: int = 50):
-    """Listar mensajes de soporte (admin)."""
-    db = get_database()
-    cursor = db["soporte"].find().sort("createdAt", -1).limit(limit)
-    return [doc_to_response(d) async for d in cursor]
-
-
-@router.patch("/{id}/read")
-async def marcar_leido(id: str):
-    """Marcar mensaje como leído."""
-    db = get_database()
-    doc = await db["soporte"].find_one_and_update(
-        {"_id": ObjectId(id)}, {"$set": {"leido": True}}, return_document=True
-    )
-    if not doc:
-        raise HTTPException(404, "Mensaje no encontrado")
-    return doc_to_response(doc)
+    return _soporte_response(doc)

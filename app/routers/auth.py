@@ -5,7 +5,7 @@ from bson import ObjectId
 
 from app.database import get_database
 from app.auth import hash_password, verify_password, create_access_token
-from app.schemas.auth import RegisterRequest, RegisterResponse, LoginRequest, TokenResponse
+from app.schemas.auth import RegisterRequest, RegisterResponse, LoginRequest, LoginResponse
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -76,28 +76,30 @@ async def register(data: RegisterRequest):
     return RegisterResponse(user=user_to_response(user_doc), token=token)
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=LoginResponse)
 async def login(data: LoginRequest):
     """
-    Login con tipo: 'admin' | 'cliente'
-    - Admin: busca por usuario O email + password
-    - Cliente: busca por email + password
+    Login. Body: { identificador, password }
+    Detección: si identificador contiene @ → cliente; si no → admin.
+    Cliente: busca por email. Admin: busca por usuario o email.
+    Error: mensaje genérico (no indicar si usuario/correo existen).
     """
     db = get_database()
     users_col = db["users"]
+    ident = data.identificador.strip()
 
-    if data.tipo == "admin":
-        # Admin/Master: puede usar usuario o email
+    if "@" in ident:
+        # Cliente: busca por email
+        user = await users_col.find_one({"email": ident.lower(), "rol": "cliente"})
+    else:
+        # Admin: busca por usuario o email
         user = await users_col.find_one({
             "$or": [
-                {"usuario": data.email},
-                {"email": data.email.lower()},
+                {"usuario": ident},
+                {"email": ident.lower()},
             ],
             "rol": {"$in": ["admin", "master"]},
         })
-    else:
-        # Cliente: solo email
-        user = await users_col.find_one({"email": data.email.lower(), "rol": "cliente"})
 
     if not user or not verify_password(data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
@@ -110,7 +112,4 @@ async def login(data: LoginRequest):
     }
     token = create_access_token(token_data)
 
-    return TokenResponse(
-        access_token=token,
-        user=user_to_response(user),
-    )
+    return LoginResponse(user=user_to_response(user), token=token)

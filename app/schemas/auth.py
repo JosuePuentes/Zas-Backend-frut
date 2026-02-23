@@ -25,14 +25,12 @@ class RegisterResponse(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    """Login. tipo distingue el flujo: admin (usuario o email) vs cliente (email)."""
-    email: str  # Para cliente. Para admin puede ser email o usuario
+    """Login. identificador: email (cliente) o usuario/email (admin). Detección por @."""
+    identificador: str
     password: str
-    tipo: Literal["admin", "cliente"] = "cliente"
 
 
-class TokenResponse(BaseModel):
-    """Respuesta con token."""
-    access_token: str
-    token_type: str = "bearer"
+class LoginResponse(BaseModel):
+    """Respuesta login: user y token."""
     user: dict
+    token: str
