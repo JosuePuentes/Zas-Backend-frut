@@ -30,9 +30,10 @@ class SaleItemSchema(BaseModel):
 
 
 class SaleCreate(BaseModel):
-    """Crear venta (desde POS). cliente_id opcional para compras de cliente."""
+    """Crear venta (desde POS). cliente_id y sucursal_id opcionales."""
     items: list[SaleItemSchema]
     cliente_id: Optional[str] = None
+    sucursal_id: Optional[str] = None
 
 
 class SaleResponse(BaseModel):

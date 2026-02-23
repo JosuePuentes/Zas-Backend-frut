@@ -20,6 +20,8 @@ def user_to_response(doc: dict) -> dict:
         "usuario": doc.get("usuario", ""),
         "rol": doc.get("rol", "cliente"),
         "permisos": doc.get("permisos", []),
+        "sucursalId": doc.get("sucursalId", ""),
+        "ubicacion": doc.get("ubicacion", {}),
         "createdAt": doc.get("createdAt", datetime.utcnow()),
     }
 
@@ -38,6 +40,7 @@ async def register(data: RegisterRequest):
     if existing:
         raise HTTPException(status_code=400, detail="El email ya está registrado")
 
+    ubicacion = data.ubicacion.model_dump() if data.ubicacion else {}
     user_doc = {
         "email": data.email.lower(),
         "password_hash": hash_password(data.password),
@@ -45,6 +48,8 @@ async def register(data: RegisterRequest):
         "telefono": data.telefono,
         "rol": data.rol,
         "permisos": [],
+        "sucursalId": "",
+        "ubicacion": ubicacion,
         "createdAt": datetime.utcnow(),
     }
 
@@ -61,7 +66,12 @@ async def register(data: RegisterRequest):
         }
         await notifications_col.insert_one(notification)
 
-    token_data = {"sub": str(user_doc["_id"]), "email": user_doc["email"], "rol": user_doc["rol"]}
+    token_data = {
+        "sub": str(user_doc["_id"]),
+        "email": user_doc["email"],
+        "rol": user_doc["rol"],
+        "sucursalId": user_doc.get("sucursalId", ""),
+    }
     token = create_access_token(token_data)
 
     return TokenResponse(
@@ -81,13 +91,13 @@ async def login(data: LoginRequest):
     users_col = db["users"]
 
     if data.tipo == "admin":
-        # Admin: puede usar usuario o email
+        # Admin/Master: puede usar usuario o email
         user = await users_col.find_one({
             "$or": [
                 {"usuario": data.email},
                 {"email": data.email.lower()},
             ],
-            "rol": "admin",
+            "rol": {"$in": ["admin", "master"]},
         })
     else:
         # Cliente: solo email
@@ -96,7 +106,12 @@ async def login(data: LoginRequest):
     if not user or not verify_password(data.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
 
-    token_data = {"sub": str(user["_id"]), "email": user["email"], "rol": user.get("rol", "cliente")}
+    token_data = {
+        "sub": str(user["_id"]),
+        "email": user["email"],
+        "rol": user.get("rol", "cliente"),
+        "sucursalId": user.get("sucursalId", ""),
+    }
     token = create_access_token(token_data)
 
     return TokenResponse(

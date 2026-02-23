@@ -9,6 +9,9 @@ from app.routers import (
     auth,
     users,
     notifications,
+    sucursales,
+    pedidos,
+    admin_finanzas,
     anuncios,
     banners,
     paneles,
@@ -30,6 +33,24 @@ from app.routers import (
 async def lifespan(app: FastAPI):
     """Ciclo de vida: conectar/desconectar MongoDB."""
     await connect_to_mongo()
+    # Seed usuario master si no existe
+    from app.database import get_database
+    from app.auth import hash_password
+    from datetime import datetime
+    db = get_database()
+    if db and not await db["users"].find_one({"rol": "master"}):
+        await db["users"].insert_one({
+            "email": "master@zas.com",
+            "usuario": "master",
+            "password_hash": hash_password("master"),
+            "nombre": "Master",
+            "telefono": "",
+            "rol": "master",
+            "permisos": ["pedidos", "sucursales", "finanzas-global"],
+            "sucursalId": "",
+            "ubicacion": {},
+            "createdAt": datetime.utcnow(),
+        })
     yield
     await close_mongo_connection()
 
@@ -53,6 +74,9 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(notifications.router)
+app.include_router(sucursales.router)
+app.include_router(pedidos.router)
+app.include_router(admin_finanzas.router)
 app.include_router(anuncios.router)
 app.include_router(banners.router)
 app.include_router(paneles.router)

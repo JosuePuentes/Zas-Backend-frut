@@ -1,111 +1,73 @@
 # Instrucciones del Backend - Especificación Técnica
 
-## 1. Autenticación
+## 1. Modelos
 
-### Login con tipo
-- **Admins**: login con `usuario` (o `email`) + `password`
-- **Clientes**: login con `email` + `password`
-- Campo `usuario` en la tabla de usuarios administrativos
-- Endpoint `POST /auth/login` acepta `tipo: 'admin' | 'cliente'` para distinguir el flujo
+### Sucursal
+- nombre, direccion, lat, lng, telefono, activa
 
-### Endpoints Auth
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/auth/register` | Registro (email, password, nombre, telefono, rol) |
-| POST | `/auth/login` | Login con `tipo: 'admin' \| 'cliente'` |
+### User
+- email, password, nombre, telefono, rol, permisos, sucursalId, ubicacion, createdAt
+- Rol master: acceso total
+- ubicacion: { lat, lng, direccion } para clientes (delivery)
 
-### Body Login
-```json
-{
-  "email": "admin@ejemplo.com",
-  "password": "***",
-  "tipo": "admin"
-}
-```
-Para admin: `email` puede ser usuario o email. Para cliente: solo email.
+### Order (Pedido)
+- clienteId, sucursalId, items, total, estado, ubicacion, direccionEntrega, notas, createdAt
 
 ---
 
-## 2. Anuncios y Banners
+## 2. Sucursales
 
-### Anuncios diarios
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| GET | `/anuncios` | Listar (query: `activo_only=true` para solo activos) |
-| POST | `/anuncios` | Crear |
-| GET | `/anuncios/{id}` | Obtener |
-| PATCH | `/anuncios/{id}` | Actualizar |
-| DELETE | `/anuncios/{id}` | Eliminar |
+| GET | `/sucursales` | Listar sucursales activas (público) |
+| GET | `/admin/sucursales` | Listar todas (solo master) |
+| POST | `/admin/sucursales` | Crear sucursal (solo master, requiere PIN en body) |
+| PUT | `/admin/sucursales/{id}` | Actualizar sucursal |
 
-**Body crear:** `{ texto, enlace?, activo? }`
-
-### Banners
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/banners` | Listar (ordenados, `activo_only=true`) |
-| POST | `/banners` | Crear |
-| GET | `/banners/{id}` | Obtener |
-| PATCH | `/banners/{id}` | Actualizar |
-| DELETE | `/banners/{id}` | Eliminar |
-
-**Body crear:** `{ imagen_url, enlace?, orden?, activo? }`
-
-### Paneles publicidad
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| GET | `/paneles` | Listar (ordenados, `activo_only=true`) |
-| POST | `/paneles` | Crear |
-| GET | `/paneles/{id}` | Obtener |
-| PATCH | `/paneles/{id}` | Actualizar |
-| DELETE | `/paneles/{id}` | Eliminar |
-
-**Body crear:** `{ imagen_url, enlace?, orden?, activo? }`
+**PIN:** Variable `PIN_MASTER` en .env (default 1234). En body: `{ ..., "pin": "1234" }`
 
 ---
 
-## 3. Soporte
+## 3. Pedidos
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| POST | `/soporte` | Crear mensaje (clienteId, mensaje, asunto?) |
-| GET | `/soporte` | Listar mensajes (admin) |
-| PATCH | `/soporte/{id}/read` | Marcar como leído |
+| POST | `/pedidos` | Crear pedido (asigna sucursal más cercana por Haversine) |
+| GET | `/cliente/pedidos` | Mis pedidos (auth) |
+| GET | `/admin/pedidos` | Listar con filtros (admin, filtrado por sucursal si no master) |
+| PATCH | `/admin/pedidos/{id}/estado` | Cambiar estado |
+| PATCH | `/admin/pedidos/{id}/sucursal` | Asignar sucursal (solo master) |
 
 ---
 
-## 4. Compras del cliente
+## 4. Finanzas
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| GET | `/compras` | Listar compras del cliente autenticado |
-
-**Requiere:** `Authorization: Bearer <token>`
+| GET | `/admin/finanzas` | Suma ventas todas sucursales (solo master) |
 
 ---
 
-## 5. Ventas (POS)
+## 5. Auth y Usuarios
 
-Al crear venta desde el frontend del cliente, incluir `cliente_id` en el body para vincular la compra:
+### Login
+- tipo: `admin` | `cliente`
+- Admin/Master: usuario o email + password
+- Cliente: email + password
 
-```json
-{
-  "items": [...],
-  "cliente_id": "ID_DEL_CLIENTE"
-}
-```
+### Registro
+- ubicacion opcional para clientes (delivery)
+
+### Credenciales de prueba
+- **Master:** usuario `master`, email `master@zas.com`, password `master`
+- **PIN:** 1234 (variable PIN_MASTER en .env)
 
 ---
 
-## 6. Usuarios
+## 6. Ventas
+- Incluir `sucursal_id` y `cliente_id` opcionales al crear venta.
 
-Al crear admin: incluir `usuario` para login.
+---
 
-```json
-{
-  "email": "admin@zas.com",
-  "password": "***",
-  "nombre": "Admin",
-  "usuario": "admin",
-  "rol": "admin"
-}
-```
+## 7. Permisos
+- pedidos, sucursales, finanzas-global (para rol master)

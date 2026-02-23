@@ -140,6 +140,8 @@ class SalesService:
         }
         if cliente_id:
             venta["clienteId"] = cliente_id
+        if sucursal_id:
+            venta["sucursalId"] = sucursal_id
         result = await sales_col.insert_one(venta)
         venta["_id"] = result.inserted_id
 

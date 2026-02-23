@@ -3,13 +3,20 @@ from typing import Literal
 from pydantic import BaseModel
 
 
+class UbicacionSchema(BaseModel):
+    lat: float = 0
+    lng: float = 0
+    direccion: str = ""
+
+
 class RegisterRequest(BaseModel):
-    """Registro de usuario (cliente)."""
+    """Registro de usuario (cliente). ubicacion para delivery."""
     email: str
     password: str
     nombre: str
     telefono: str = ""
     rol: str = "cliente"
+    ubicacion: UbicacionSchema | None = None
 
 
 class LoginRequest(BaseModel):

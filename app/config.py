@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     jwt_secret: str = "cambiar-en-produccion-secret-key-segura"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24 * 7  # 7 días
+    pin_master: str = "1234"  # PIN master para crear sucursales (cambiar en .env)
 
     class Config:
         env_file = ".env"

@@ -18,7 +18,9 @@ async def crear_venta(data: SaleCreate):
     """
     try:
         items = [item.model_dump() for item in data.items]
-        return await SalesService.crear_venta(items, cliente_id=data.cliente_id)
+        return await SalesService.crear_venta(
+            items, cliente_id=data.cliente_id, sucursal_id=data.sucursal_id
+        )
     except ValueError as e:
         raise HTTPException(400, str(e))
 
