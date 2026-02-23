@@ -14,6 +14,8 @@ async def connect_to_mongo():
     client = AsyncIOMotorClient(
         settings.mongodb_url,
         tlsCAFile=certifi.where(),
+        serverSelectionTimeoutMS=10000,
+        connectTimeoutMS=10000,
     )
     db = client[settings.mongodb_db_name]
 

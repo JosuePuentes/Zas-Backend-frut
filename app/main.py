@@ -38,7 +38,12 @@ from app.routers import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Ciclo de vida: conectar/desconectar MongoDB."""
-    await connect_to_mongo()
+    import logging
+    log = logging.getLogger("uvicorn.error")
+    try:
+        await connect_to_mongo()
+    except Exception as e:
+        log.error(f"MongoDB connection failed: {e}. App will start but DB endpoints may fail.")
     # Seed usuario master si no existe
     from app.database import get_database
     from app.auth import hash_password
