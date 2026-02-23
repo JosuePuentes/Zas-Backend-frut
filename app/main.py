@@ -39,26 +39,30 @@ async def lifespan(app: FastAPI):
     from datetime import datetime
     db = get_database()
     if db is not None:
-        master = await db["users"].find_one({"rol": "master"})
-        master_doc = {
-            "email": "master@zas.com",
-            "usuario": "master",
-            "password_hash": hash_password("clave123"),
-            "nombre": "Master",
-            "telefono": "",
-            "rol": "master",
-            "permisos": ["pedidos", "sucursales", "finanzas-global"],
-            "sucursalId": "",
-            "ubicacion": {},
-            "createdAt": datetime.utcnow(),
-        }
-        if not master:
-            await db["users"].insert_one(master_doc)
-        else:
-            await db["users"].update_one(
-                {"rol": "master"},
-                {"$set": {"password_hash": master_doc["password_hash"]}},
-            )
+        try:
+            master = await db["users"].find_one({"rol": "master"})
+            master_doc = {
+                "email": "master@zas.com",
+                "usuario": "master",
+                "password_hash": hash_password("clave123"),
+                "nombre": "Master",
+                "telefono": "",
+                "rol": "master",
+                "permisos": ["pedidos", "sucursales", "finanzas-global"],
+                "sucursalId": "",
+                "ubicacion": {},
+                "createdAt": datetime.utcnow(),
+            }
+            if not master:
+                await db["users"].insert_one(master_doc)
+            else:
+                await db["users"].update_one(
+                    {"rol": "master"},
+                    {"$set": {"password_hash": master_doc["password_hash"]}},
+                )
+        except Exception as e:
+            import logging
+            logging.getLogger("uvicorn.error").warning(f"Master seed falló (MongoDB): {e}")
     yield
     await close_mongo_connection()
 

@@ -1,4 +1,5 @@
 """Conexión a MongoDB usando Motor (async)."""
+import certifi
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.config import get_settings
 
@@ -8,9 +9,12 @@ db = None
 
 
 async def connect_to_mongo():
-    """Conectar a MongoDB."""
+    """Conectar a MongoDB. Usa certifi para CA bundle (fix SSL con Atlas)."""
     global client, db
-    client = AsyncIOMotorClient(settings.mongodb_url)
+    client = AsyncIOMotorClient(
+        settings.mongodb_url,
+        tlsCAFile=certifi.where(),
+    )
     db = client[settings.mongodb_db_name]
 
 
