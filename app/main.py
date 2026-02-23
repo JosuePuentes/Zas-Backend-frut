@@ -38,7 +38,7 @@ async def lifespan(app: FastAPI):
     from app.auth import hash_password
     from datetime import datetime
     db = get_database()
-    if db:
+    if db is not None:
         master = await db["users"].find_one({"rol": "master"})
         master_doc = {
             "email": "master@zas.com",
