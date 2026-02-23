@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     mongodb_db_name: str = "zas_batidos"
     api_host: str = "0.0.0.0"
     api_port: int = 8000
+    jwt_secret: str = "cambiar-en-produccion-secret-key-segura"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 60 * 24 * 7  # 7 días
 
     class Config:
         env_file = ".env"

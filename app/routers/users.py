@@ -1,0 +1,57 @@
+"""Endpoints de usuarios."""
+from datetime import datetime
+from fastapi import APIRouter, HTTPException
+from bson import ObjectId
+
+from app.database import get_database
+from app.auth import hash_password
+from app.schemas.user import UserCreateRequest, UserResponse
+
+router = APIRouter(prefix="/users", tags=["Users"])
+
+
+def user_to_response(doc: dict) -> dict:
+    """Convertir documento a respuesta."""
+    return {
+        "id": str(doc["_id"]),
+        "email": doc["email"],
+        "nombre": doc["nombre"],
+        "telefono": doc.get("telefono", ""),
+        "rol": doc.get("rol", "cliente"),
+        "permisos": doc.get("permisos", []),
+        "createdAt": doc.get("createdAt", datetime.utcnow()),
+    }
+
+
+@router.get("", response_model=list[UserResponse])
+async def listar_usuarios():
+    """Listar usuarios y clientes."""
+    db = get_database()
+    cursor = db["users"].find({})
+    return [user_to_response(doc) async for doc in cursor]
+
+
+@router.post("", response_model=UserResponse)
+async def crear_usuario(data: UserCreateRequest):
+    """Crear usuario (incluir teléfono)."""
+    db = get_database()
+    users_col = db["users"]
+
+    existing = await users_col.find_one({"email": data.email.lower()})
+    if existing:
+        raise HTTPException(status_code=400, detail="El email ya está registrado")
+
+    user_doc = {
+        "email": data.email.lower(),
+        "password_hash": hash_password(data.password),
+        "nombre": data.nombre,
+        "telefono": data.telefono,
+        "rol": data.rol,
+        "permisos": data.permisos,
+        "createdAt": datetime.utcnow(),
+    }
+
+    result = await users_col.insert_one(user_doc)
+    user_doc["_id"] = result.inserted_id
+
+    return user_to_response(user_doc)

@@ -1,0 +1,88 @@
+"""Endpoints de autenticación."""
+from datetime import datetime
+from fastapi import APIRouter, HTTPException, status
+from bson import ObjectId
+
+from app.database import get_database
+from app.auth import hash_password, verify_password, create_access_token
+from app.schemas.auth import RegisterRequest, LoginRequest, TokenResponse
+
+router = APIRouter(prefix="/auth", tags=["Auth"])
+
+
+def user_to_response(doc: dict) -> dict:
+    """Convertir documento a respuesta (sin password)."""
+    return {
+        "id": str(doc["_id"]),
+        "email": doc["email"],
+        "nombre": doc["nombre"],
+        "telefono": doc.get("telefono", ""),
+        "rol": doc.get("rol", "cliente"),
+        "permisos": doc.get("permisos", []),
+        "createdAt": doc.get("createdAt", datetime.utcnow()),
+    }
+
+
+@router.post("/register", response_model=TokenResponse)
+async def register(data: RegisterRequest):
+    """
+    Registro de usuario (principalmente clientes).
+    Al registrar un cliente, se crea una notificación.
+    """
+    db = get_database()
+    users_col = db["users"]
+    notifications_col = db["notifications"]
+
+    existing = await users_col.find_one({"email": data.email.lower()})
+    if existing:
+        raise HTTPException(status_code=400, detail="El email ya está registrado")
+
+    user_doc = {
+        "email": data.email.lower(),
+        "password_hash": hash_password(data.password),
+        "nombre": data.nombre,
+        "telefono": data.telefono,
+        "rol": data.rol,
+        "permisos": [],
+        "createdAt": datetime.utcnow(),
+    }
+
+    result = await users_col.insert_one(user_doc)
+    user_doc["_id"] = result.inserted_id
+
+    # Si es cliente, crear notificación
+    if data.rol == "cliente":
+        notification = {
+            "tipo": "nuevo_cliente",
+            "mensaje": f"Nuevo cliente registrado: {data.nombre}",
+            "leida": False,
+            "createdAt": datetime.utcnow(),
+        }
+        await notifications_col.insert_one(notification)
+
+    token_data = {"sub": str(user_doc["_id"]), "email": user_doc["email"], "rol": user_doc["rol"]}
+    token = create_access_token(token_data)
+
+    return TokenResponse(
+        access_token=token,
+        user=user_to_response(user_doc),
+    )
+
+
+@router.post("/login", response_model=TokenResponse)
+async def login(data: LoginRequest):
+    """Login con email y password."""
+    db = get_database()
+    users_col = db["users"]
+
+    user = await users_col.find_one({"email": data.email.lower()})
+    if not user or not verify_password(data.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Email o contraseña incorrectos")
+
+    token_data = {"sub": str(user["_id"]), "email": user["email"], "rol": user.get("rol", "cliente")}
+    token = create_access_token(token_data)
+
+    return TokenResponse(
+        access_token=token,
+        user=user_to_response(user),
+    )

@@ -6,6 +6,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import connect_to_mongo, close_mongo_connection
 from app.routers import (
+    auth,
+    users,
+    notifications,
     inventory_raw,
     inventory_dosis,
     recipes,
@@ -42,6 +45,9 @@ app.add_middleware(
 )
 
 # Routers
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(notifications.router)
 app.include_router(inventory_raw.router)
 app.include_router(inventory_dosis.router)
 app.include_router(recipes.router)

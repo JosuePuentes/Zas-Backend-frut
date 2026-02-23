@@ -38,6 +38,7 @@ En **Environment** del servicio, añade:
 | Key | Value |
 |-----|-------|
 | `MONGODB_URL` | Tu connection string de MongoDB Atlas |
+| `JWT_SECRET` | Clave secreta para tokens (ej: string aleatorio largo) |
 | `PYTHON_VERSION` | `3.12.0` *(opcional, evita usar Python 3.14)* |
 
 ### 5. Desplegar
